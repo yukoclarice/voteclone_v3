@@ -1,0 +1,18 @@
+/* Custom styles for NProgress */
+#nprogress .bar {
+  background: #35bce8; /* Match the blue color from the countdown */
+  height: 2px;
+}
+
+#nprogress .peg {
+  box-shadow: 0 0 10px #35bce8, 0 0 5px #35bce8;
+}
+
+/* When you want a different color for different pages, you can add classes */
+.nprogress-custom-green #nprogress .bar {
+  background: var(--custom-green, #4caf50);
+}
+
+.nprogress-custom-green #nprogress .peg {
+  box-shadow: 0 0 10px var(--custom-green, #4caf50), 0 0 5px var(--custom-green, #4caf50);
+}
