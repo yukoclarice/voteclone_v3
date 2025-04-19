@@ -1,6 +1,15 @@
+import { PROVINCES } from './provinceData';
+
+// Helper function to get province code by name
+const getProvinceCodeByName = (name) => {
+  const province = PROVINCES.find(p => p.name === name);
+  return province ? province.code : '';
+};
+
 export const GOVERNORS = [
   {
     province: "Albay",
+    provinceCode: "050500000",
     region: "Province of",
     shareUrl: "https://www.facebook.com/sharer/sharer.php?u=https://bicolresearchandsurvey.com?position=governor",
     candidates: [
@@ -22,6 +31,7 @@ export const GOVERNORS = [
   },
   {
     province: "Camarines Norte",
+    provinceCode: "051600000",
     region: "Province of",
     shareUrl: "https://www.facebook.com/sharer/sharer.php?u=https://bicolresearchandsurvey.com?position=governor",
     candidates: [
@@ -43,6 +53,7 @@ export const GOVERNORS = [
   },
   {
     province: "Camarines Sur",
+    provinceCode: "051700000",
     region: "Province of",
     shareUrl: "https://www.facebook.com/sharer/sharer.php?u=https://bicolresearchandsurvey.com?position=governor",
     candidates: [
@@ -64,6 +75,7 @@ export const GOVERNORS = [
   },
   {
     province: "Catanduanes",
+    provinceCode: "052000000",
     region: "Province of",
     shareUrl: "https://www.facebook.com/sharer/sharer.php?u=https://bicolresearchandsurvey.com?position=governor",
     candidates: [
@@ -85,6 +97,7 @@ export const GOVERNORS = [
   },
   {
     province: "Masbate",
+    provinceCode: "054100000",
     region: "Province of",
     shareUrl: "https://www.facebook.com/sharer/sharer.php?u=https://bicolresearchandsurvey.com?position=governor",
     candidates: [
@@ -106,6 +119,7 @@ export const GOVERNORS = [
   },
   {
     province: "Sorsogon",
+    provinceCode: "056200000",
     region: "Province of",
     shareUrl: "https://www.facebook.com/sharer/sharer.php?u=https://bicolresearchandsurvey.com?position=governor",
     candidates: [

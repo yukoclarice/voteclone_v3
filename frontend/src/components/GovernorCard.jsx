@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function GovernorCard({ province, region, candidates, shareUrl }) {
+export default function GovernorCard({ province, provinceCode, region, candidates, shareUrl }) {
   return (
     <div className="flex flex-col rounded-md overflow-hidden">
       <div className="flex justify-between items-center bg-dark-blue py-4 px-4 sm:px-8">
@@ -33,7 +33,12 @@ export default function GovernorCard({ province, region, candidates, shareUrl })
             </div>
           ))}
         </div>
-        <button className="text-xs gap-3 text-gray-400 mt-4 self-center flex items-center cursor-pointer py-2">View all</button>
+        <button 
+          className="text-xs gap-3 text-gray-400 mt-4 self-center flex items-center cursor-pointer py-2"
+          data-province-code={provinceCode}
+        >
+          View all
+        </button>
       </div>
     </div>
   );
