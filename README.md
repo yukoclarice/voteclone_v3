@@ -1,15 +1,3 @@
-# Bicol Research Website v3
-
-A modern web application for displaying election survey results from the Bicol Region, Philippines. This project showcases election data including senators, party lists, and governors with an interactive UI.
-
-## Features
-
-- Display of senator candidates with vote percentages
-- Party list representation with vote counts
-- Governor candidates by province
-- Interactive province selection dropdown
-- Halalan 2025 countdown timer
-- Responsive design for all device sizes
 
 ## Technologies Used
 
@@ -58,6 +46,3 @@ A modern web application for displaying election survey results from the Bicol R
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgments
-
-- Bicol Research & Survey Group for the data
