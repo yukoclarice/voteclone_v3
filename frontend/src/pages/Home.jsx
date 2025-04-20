@@ -2,8 +2,7 @@ import { useEffect } from 'react'
 import StatusBar from '../components/StatusBar'
 import SenatorList from '../components/SenatorList'
 import PartyList from '../components/PartyList'
-import GovernorCard from '../components/GovernorCard'
-import { GOVERNORS } from '../components/governorData'
+import GovernorList from '../components/GovernorList'
 
 // Import NProgress utilities and styles
 import { startProgress, doneProgress } from '../utils/nprogress'
@@ -53,21 +52,7 @@ function Home() {
           <SenatorList />
           <PartyList />
         </div>
-        <div>
-          <h3 className="font-bold text-lg">GOVERNOR</h3>
-          <div className="grid md:grid-cols-2 gap-4 mt-3">
-            {GOVERNORS.map((gov) => (
-              <GovernorCard 
-                key={gov.provinceCode} 
-                province={gov.province} 
-                provinceCode={gov.provinceCode}
-                region={gov.region} 
-                candidates={gov.candidates} 
-                shareUrl={gov.shareUrl} 
-              />
-            ))}
-          </div>
-        </div>
+        <GovernorList />
       </div>
     </section>
     </>

@@ -368,3 +368,13 @@
     --color-custom-red: #d54c54;
     --color-custom-gray: #eae9e3;
 }
+
+/* Add custom utility classes below */
+@layer utilities {
+    .border-custom-green\/50 {
+        border-color: 
+    color-mix(in oklab, var(--color-custom-green) 50%, transparent);
+    }
+}
+
+/* Rest of the existing CSS */
