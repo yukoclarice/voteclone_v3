@@ -32,7 +32,10 @@ app.use(helmet());
 app.use(securityHeaders);
 
 // CORS middleware
-app.use(cors());
+app.use(cors({
+  origin: ['https://voteclone-v3.onrender.com'],
+  credentials: true
+}));
 
 // Log environment variables for debugging
 logger.info(`NODE_ENV: ${process.env.NODE_ENV}`);
