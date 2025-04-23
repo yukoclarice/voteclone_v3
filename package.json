@@ -4,8 +4,8 @@
   "description": "Bicol Research Survey Website",
   "main": "index.js",
   "scripts": {
-    "install:frontend": "cd frontend && npm ci",
-    "install:backend": "cd backend && npm ci",
+    "install:frontend": "cd frontend && npm install --no-package-lock",
+    "install:backend": "cd backend && npm install --no-package-lock",
     "postinstall": "npm run install:frontend && npm run install:backend",
     "build:frontend": "cd frontend && npm run build",
     "start:backend": "cd backend && npm start",

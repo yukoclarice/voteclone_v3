@@ -4,17 +4,19 @@ node --version
 echo 🔍 NPM version:
 npm --version
 
-echo 🧹 Cleaning node_modules...
+echo 🧹 Cleaning node_modules and lock files...
 if exist node_modules rmdir /s /q node_modules
 if exist frontend\node_modules rmdir /s /q frontend\node_modules
 if exist backend\node_modules rmdir /s /q backend\node_modules
+if exist frontend\package-lock.json del /f frontend\package-lock.json
+if exist backend\package-lock.json del /f backend\package-lock.json
 
 echo 📦 Installing root dependencies...
-call npm install
+call npm install --no-package-lock
 
 echo 📦 Installing frontend dependencies...
 cd frontend
-call npm install --legacy-peer-deps
+call npm install --no-package-lock
 echo 🔧 Frontend dependencies installed successfully
 
 echo 🏗️ Building frontend...
@@ -24,7 +26,7 @@ cd ..
 
 echo 📦 Installing backend dependencies...
 cd backend
-call npm install
+call npm install --no-package-lock
 echo 🔧 Backend dependencies installed successfully
 cd ..
 
