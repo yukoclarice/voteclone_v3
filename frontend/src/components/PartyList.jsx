@@ -1,28 +1,42 @@
 import { useState, useEffect } from "react";
 import { candidateService } from "../utils/api";
+import { PROVINCES } from "./provinceData";
+import logger from "../utils/logger";
 
-export default function PartyList() {
+export default function PartyList({ provinceCode = '' }) {
   const [partyLists, setPartyLists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAll, setShowAll] = useState(false);
+  const [filteredByProvince, setFilteredByProvince] = useState(false);
   const PARTY_LIMIT = 4;
+
+  // Get province name for display
+  const getProvinceName = (provinceCode) => {
+    if (!provinceCode) return "National";
+    const province = PROVINCES.find(p => p.code === provinceCode);
+    return province ? province.name : "Unknown Province";
+  };
 
   useEffect(() => {
     const fetchPartyLists = async () => {
       try {
         setLoading(true);
-        const response = await candidateService.getPartyLists();
+        logger.info(`Fetching party lists data for province: ${provinceCode || 'all'}`);
+        const response = await candidateService.getPartyLists(provinceCode);
         
-        if (response.success) {
+        logger.debug('Party list response:', response);
+        
+        if (response && response.success) {
           // Sort party lists by votes in descending order
           const sortedPartyLists = [...response.data].sort((a, b) => b.votes - a.votes);
           setPartyLists(sortedPartyLists);
+          setFilteredByProvince(response.filtered_by_province || false);
         } else {
           setError('Failed to fetch party list data');
         }
       } catch (err) {
-        console.error('Error fetching party lists:', err);
+        logger.error('Error fetching party lists:', err);
         setError(err.message || 'Failed to fetch party list data');
       } finally {
         setLoading(false);
@@ -30,10 +44,11 @@ export default function PartyList() {
     };
 
     fetchPartyLists();
-  }, []);
+  }, [provinceCode]);
 
   // Calculate displayed party lists
   const displayedPartyLists = showAll ? partyLists : partyLists.slice(0, PARTY_LIMIT);
+  const provinceName = getProvinceName(provinceCode);
 
   // Loading state
   if (loading) {
@@ -42,7 +57,7 @@ export default function PartyList() {
         <div className="flex justify-between items-center bg-dark-blue py-4 px-4 sm:px-8">
           <div className="flex flex-col">
             <h1 className="font-medium text-white text-xl leading-5">PARTY-LIST</h1>
-            <p className="text-white text-xs">Camarines Sur, Region V</p>
+            <p className="text-white text-xs">{provinceName}</p>
           </div>
         </div>
         <div className="flex flex-col py-4 bg-white px-4 sm:px-8 min-h-64 justify-center items-center">
@@ -59,7 +74,7 @@ export default function PartyList() {
         <div className="flex justify-between items-center bg-dark-blue py-4 px-4 sm:px-8">
           <div className="flex flex-col">
             <h1 className="font-medium text-white text-xl leading-5">PARTY-LIST</h1>
-            <p className="text-white text-xs">Camarines Sur, Region V</p>
+            <p className="text-white text-xs">{provinceName}</p>
           </div>
         </div>
         <div className="flex flex-col py-4 bg-white px-4 sm:px-8 min-h-64 justify-center items-center">
@@ -74,7 +89,7 @@ export default function PartyList() {
       <div className="flex justify-between items-center bg-dark-blue py-4 px-4 sm:px-8">
         <div className="flex flex-col">
           <h1 className="font-medium text-white text-xl leading-5">PARTY-LIST</h1>
-          <p className="text-white text-xs">Camarines Sur, Region V</p>
+          <p className="text-white text-xs">{provinceName}{filteredByProvince && " Voter Results"}</p>
         </div>
       </div>
       <div className="flex flex-col py-4 bg-white px-4 sm:px-8 min-h-64 party-list-container">

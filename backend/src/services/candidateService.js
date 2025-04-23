@@ -199,4 +199,92 @@ export const removeCandidate = async (id) => {
     logger.error(`Error deleting candidate with ID: ${id}`, error);
     throw error;
   }
+};
+
+/**
+ * Calculate the vote percentage for candidates based on the total votes for their position
+ * @param {Array} candidates - Array of candidate objects (can be Sequelize models or raw SQL results)
+ * @returns {Array} - Array of candidate objects with calculated vote_percentage
+ */
+export const calculateVotePercentages = async (candidates) => {
+  try {
+    if (!candidates || !Array.isArray(candidates) || candidates.length === 0) {
+      return [];
+    }
+
+    // Ensure we're working with plain objects
+    const plainCandidates = candidates.map(candidate => 
+      candidate.toJSON ? candidate.toJSON() : {...candidate}
+    );
+
+    // Group candidates by position_id
+    const positionMap = new Map();
+    plainCandidates.forEach(candidate => {
+      const positionId = candidate.position_id;
+      if (!positionMap.has(positionId)) {
+        positionMap.set(positionId, []);
+      }
+      positionMap.get(positionId).push(candidate);
+    });
+
+    // Calculate total votes for each position
+    const positionTotals = new Map();
+    for (const [positionId, candidateList] of positionMap.entries()) {
+      // Ensure votes is a number
+      const totalVotes = candidateList.reduce((sum, candidate) => {
+        const votes = typeof candidate.votes === 'string' 
+          ? parseInt(candidate.votes, 10) 
+          : (candidate.votes || 0);
+        return sum + votes;
+      }, 0);
+      positionTotals.set(positionId, totalVotes);
+    }
+
+    // Calculate percentages
+    return plainCandidates.map(candidate => {
+      const candidateObject = {...candidate};
+      const positionTotal = positionTotals.get(candidate.position_id) || 0;
+      const votes = typeof candidate.votes === 'string' 
+        ? parseInt(candidate.votes, 10) 
+        : (candidate.votes || 0);
+      
+      // Avoid division by zero
+      if (positionTotal > 0) {
+        candidateObject.vote_percentage = parseFloat(((votes / positionTotal) * 100).toFixed(2));
+      } else {
+        candidateObject.vote_percentage = 0;
+      }
+      
+      return candidateObject;
+    });
+  } catch (error) {
+    logger.error(`Error calculating vote percentages: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
+ * Calculate the position totals map for vote percentage calculations
+ * @returns {Map} - Map of position_id to total votes for that position
+ */
+export const getPositionTotals = async () => {
+  try {
+    // Get total votes per position using raw SQL for efficiency
+    const [results] = await sequelize.query(`
+      SELECT position_id, SUM(votes) as total_votes
+      FROM tbl_candidates
+      GROUP BY position_id
+    `);
+    
+    // Convert to a map for easy lookup
+    const positionTotals = new Map();
+    results.forEach(result => {
+      positionTotals.set(result.position_id, result.total_votes);
+    });
+    
+    return positionTotals;
+  } catch (error) {
+    logger.error(`Error getting position totals: ${error.message}`);
+    throw error;
+  }
 }; 

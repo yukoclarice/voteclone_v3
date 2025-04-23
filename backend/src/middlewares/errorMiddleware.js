@@ -1,4 +1,4 @@
-import logger from '../utils/logger.js';
+import { logger } from '../utils/logger.js';
 
 // Not Found Error handler
 export const notFound = (req, res, next) => {

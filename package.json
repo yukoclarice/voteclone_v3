@@ -1,0 +1,27 @@
+{
+  "name": "bicol-research-website",
+  "version": "1.0.0",
+  "description": "Bicol Research Survey Website",
+  "main": "index.js",
+  "scripts": {
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd backend && npm install",
+    "postinstall": "npm run install:frontend && npm run install:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "start:backend": "cd backend && npm start",
+    "build": "npm run build:frontend",
+    "start": "npm run start:backend"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "bicol",
+    "research",
+    "survey",
+    "react",
+    "express"
+  ],
+  "author": "",
+  "license": "ISC"
+} 

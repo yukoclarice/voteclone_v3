@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: bicol-research-website
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      # Database configuration
+      - key: DB_HOST
+        sync: false # You'll need to set this in the Render dashboard
+      - key: DB_PORT
+        value: 3306
+      - key: DB_USER
+        sync: false # You'll need to set this in the Render dashboard
+      - key: DB_PASSWORD
+        sync: false # You'll need to set this in the Render dashboard
+      - key: DB_NAME
+        sync: false # You'll need to set this in the Render dashboard
+      - key: DB_DIALECT
+        value: mysql
+      # Security
+      - key: JWT_SECRET
+        generateValue: true # Auto-generates a secure value
+      - key: LOG_LEVEL
+        value: info 

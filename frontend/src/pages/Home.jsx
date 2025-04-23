@@ -1,58 +1,48 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import StatusBar from '../components/StatusBar'
 import SenatorList from '../components/SenatorList'
 import PartyList from '../components/PartyList'
 import GovernorList from '../components/GovernorList'
-
-// Import NProgress utilities and styles
-import { startProgress, doneProgress } from '../utils/nprogress'
-import '../styles/nprogress-custom.css'
-import 'nprogress/nprogress.css'
+import logger from '../utils/logger'
+import { useProvince } from '../context/ProvinceContext'
 
 function Home() {
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [searchParams] = useSearchParams();
+  const { setSelectedVoteProvince } = useProvince();
+  const provinceCode = searchParams.get('province') || '';
+  
   useEffect(() => {
-    // Start progress bar when component mounts (page loads)
-    startProgress();
+    // Update the province context with the province from URL
+    setSelectedVoteProvince(provinceCode);
     
-    // Complete the progress bar after a short delay to simulate loading
-    const timer = setTimeout(() => {
-      doneProgress();
-    }, 500);
-    
-    // Add event listeners for navigation
-    const handleStart = () => {
-      startProgress();
+    // Simulate data loading when component mounts
+    const fetchData = async () => {
+      logger.info(`Home page: Fetching candidate data for province: ${provinceCode || 'all'}`);
+      
+      // We don't show loading on the very first component load
+      // But will still fetch the data silently in the background
+      
+      // In a real app, we would fetch data here...
+      
+      // Mark initial load as complete
+      setIsInitialLoad(false);
     };
     
-    const handleComplete = () => {
-      doneProgress();
-    };
-    
-    // For regular link navigation (non-SPA)
-    document.addEventListener('click', (e) => {
-      const target = e.target.closest('a');
-      if (target && target.href && !target.href.startsWith('#') && !e.ctrlKey && !e.metaKey) {
-        startProgress();
-      }
-    });
-    
-    // Clean up
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener('click', handleStart);
-    };
-  }, []);
+    fetchData();
+  }, [provinceCode, setSelectedVoteProvince]);
   
   return (
     <>
-    <StatusBar />
+    <StatusBar provinceCode={provinceCode} />
     <section className="bg-custom-gray py-8 min-h-screen">
       <div className="container max-w-5xl px-4 mx-auto grid gap-12">
         <div className="grid gap-4">
-          <SenatorList />
-          <PartyList />
+          <SenatorList provinceCode={provinceCode} />
+          <PartyList provinceCode={provinceCode} />
         </div>
-        <GovernorList />
+        <GovernorList provinceCode={provinceCode} />
       </div>
     </section>
     </>

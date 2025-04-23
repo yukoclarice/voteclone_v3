@@ -22,35 +22,35 @@ const router = express.Router();
  * @desc    Get all candidates
  * @access  Public
  */
-router.get('/', getAllCandidates);
+router.get('/', validateCandidateQuery, getAllCandidates);
 
 /**
  * @route   GET /api/candidates/senators
  * @desc    Get all senator candidates
  * @access  Public
  */
-router.get('/senators', getSenators);
+router.get('/senators', validateCandidateQuery, getSenators);
 
 /**
  * @route   GET /api/candidates/party-lists
  * @desc    Get all party list candidates
  * @access  Public
  */
-router.get('/party-lists', getPartyLists);
+router.get('/party-lists', validateCandidateQuery, getPartyLists);
 
 /**
  * @route   GET /api/candidates/governors
  * @desc    Get all governor candidates with optional province filtering
  * @access  Public
  */
-router.get('/governors', getGovernors);
+router.get('/governors', validateCandidateQuery, getGovernors);
 
 /**
  * @route   GET /api/candidates/:id
  * @desc    Get a candidate by ID
  * @access  Public
  */
-router.get('/:id', getCandidateById);
+router.get('/:id', validateCandidateId, getCandidateById);
 
 /**
  * @route   POST /api/candidates

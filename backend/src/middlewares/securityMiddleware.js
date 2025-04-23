@@ -64,43 +64,4 @@ export const securityHeaders = (req, res, next) => {
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
   
   next();
-};
-
-/**
- * Rate limiting protection (simple implementation)
- * For production, consider using a more robust solution like express-rate-limit
- */
-const requestCounts = new Map();
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 100; // Adjust as needed
-
-export const rateLimit = (req, res, next) => {
-  const clientIP = req.ip || req.connection.remoteAddress;
-  const now = Date.now();
-  
-  if (!requestCounts.has(clientIP)) {
-    requestCounts.set(clientIP, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
-  } else {
-    const client = requestCounts.get(clientIP);
-    
-    if (now > client.resetTime) {
-      // Reset window
-      client.count = 1;
-      client.resetTime = now + RATE_LIMIT_WINDOW;
-    } else {
-      // Increment request count
-      client.count += 1;
-      
-      // Check if rate limit exceeded
-      if (client.count > MAX_REQUESTS_PER_WINDOW) {
-        logger.warn(`Rate limit exceeded for IP: ${clientIP}`);
-        return res.status(429).json({
-          status: 'error',
-          message: 'Too many requests, please try again later'
-        });
-      }
-    }
-  }
-  
-  next();
 }; 
