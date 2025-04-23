@@ -1,28 +1,42 @@
 import { useState, useEffect } from "react";
 import { candidateService } from "../utils/api";
+import { PROVINCES } from "./provinceData";
+import logger from "../utils/logger";
 
-export default function SenatorList() {
+export default function SenatorList({ provinceCode = '' }) {
   const [senators, setSenators] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAll, setShowAll] = useState(false);
+  const [filteredByProvince, setFilteredByProvince] = useState(false);
   const SENATOR_LIMIT = 12;
+
+  // Get province name for display
+  const getProvinceName = (provinceCode) => {
+    if (!provinceCode) return "National";
+    const province = PROVINCES.find(p => p.code === provinceCode);
+    return province ? province.name : "Unknown Province";
+  };
 
   useEffect(() => {
     const fetchSenators = async () => {
       try {
         setLoading(true);
-        const response = await candidateService.getSenators();
+        logger.info(`Fetching senators data for province: ${provinceCode || 'all'}`);
+        const response = await candidateService.getSenators(provinceCode);
         
-        if (response.success) {
+        logger.debug('Senator response:', response);
+        
+        if (response && response.success) {
           // Sort senators by votes in descending order
           const sortedSenators = [...response.data].sort((a, b) => b.votes - a.votes);
           setSenators(sortedSenators);
+          setFilteredByProvince(response.filtered_by_province || false);
         } else {
           setError('Failed to fetch senators data');
         }
       } catch (err) {
-        console.error('Error fetching senators:', err);
+        logger.error('Error fetching senators:', err);
         setError(err.message || 'Failed to fetch senators data');
       } finally {
         setLoading(false);
@@ -30,10 +44,11 @@ export default function SenatorList() {
     };
 
     fetchSenators();
-  }, []);
+  }, [provinceCode]);
 
   // Calculate displayed senators
   const displayedSenators = showAll ? senators : senators.slice(0, SENATOR_LIMIT);
+  const provinceName = getProvinceName(provinceCode);
 
   // Loading state
   if (loading) {
@@ -42,7 +57,7 @@ export default function SenatorList() {
         <div className="flex justify-between items-center bg-dark-blue py-4 px-4 sm:px-8">
           <div className="flex flex-col">
             <h1 className="font-medium text-white text-xl leading-5">SENATOR</h1>
-            <p className="text-white text-xs">Camarines Sur, Region V</p>
+            <p className="text-white text-xs">{provinceName}</p>
           </div>
         </div>
         <div className="flex flex-col py-4 bg-white px-4 sm:px-8 min-h-64 justify-center items-center">
@@ -59,7 +74,7 @@ export default function SenatorList() {
         <div className="flex justify-between items-center bg-dark-blue py-4 px-4 sm:px-8">
           <div className="flex flex-col">
             <h1 className="font-medium text-white text-xl leading-5">SENATOR</h1>
-            <p className="text-white text-xs">Camarines Sur, Region V</p>
+            <p className="text-white text-xs">{provinceName}</p>
           </div>
         </div>
         <div className="flex flex-col py-4 bg-white px-4 sm:px-8 min-h-64 justify-center items-center">
@@ -74,7 +89,7 @@ export default function SenatorList() {
       <div className="flex justify-between items-center bg-dark-blue py-4 px-4 sm:px-8">
         <div className="flex flex-col">
           <h1 className="font-medium text-white text-xl leading-5">SENATOR</h1>
-          <p className="text-white text-xs">Camarines Sur, Region V</p>
+          <p className="text-white text-xs">{provinceName}{filteredByProvince && " Voter Results"}</p>
         </div>
         {/* Share button placeholder */}
       </div>

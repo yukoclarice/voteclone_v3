@@ -4,6 +4,7 @@ import Candidate from './Candidate.js';
 import Province from './Province.js';
 import Position from './Position.js';
 import Total from './Total.js';
+import UserVote from './UserVote.js';
 
 // Define associations
 // Create associations between models
@@ -45,6 +46,21 @@ User.belongsTo(Province, {
   targetKey: 'code'
 });
 
+// User and Candidate associations through UserVote
+User.belongsToMany(Candidate, {
+  through: UserVote,
+  foreignKey: 'user_id',
+  otherKey: 'candidate_id',
+  as: 'votedCandidates'
+});
+
+Candidate.belongsToMany(User, {
+  through: UserVote,
+  foreignKey: 'candidate_id',
+  otherKey: 'user_id',
+  as: 'voters'
+});
+
 // To enable querying from both sides with proper types
 // NOTE: Only needed for associations with non-standard key fields
 Candidate.addScope('withProvince', {
@@ -75,5 +91,6 @@ export {
   Candidate,
   Province,
   Position,
-  Total
+  Total,
+  UserVote
 }; 

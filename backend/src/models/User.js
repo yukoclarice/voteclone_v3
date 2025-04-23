@@ -72,16 +72,6 @@ User.init(
       field: 'ip_address',
       allowNull: false
     },
-    hasVoted: {
-      type: DataTypes.BOOLEAN,
-      field: 'has_voted',
-      defaultValue: false
-    },
-    voteTimestamp: {
-      type: DataTypes.DATE,
-      field: 'vote_timestamp',
-      allowNull: true
-    },
     createdAt: {
       type: DataTypes.DATE,
       field: 'created_at',

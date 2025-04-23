@@ -9,9 +9,12 @@ import { fileURLToPath } from 'url';
 import { sequelize, testConnection } from './config/db.js';
 // Import models to ensure associations are loaded
 import './models/index.js';
-import userRoutes from './routes/userRoutes.js';
-import candidateRoutes from './routes/candidateRoutes.js';
 import { logger, morganStream } from './utils/logger.js';
+import { notFound, errorHandler } from './middlewares/errorMiddleware.js';
+import { sqlInjectionProtection, securityHeaders } from './middlewares/securityMiddleware.js';
+
+// Import routes
+import routes from './routes/index.js';
 
 // Load environment variables
 dotenv.config();
@@ -19,32 +22,57 @@ dotenv.config();
 // Create Express app
 const app = express();
 
+// Trust proxies for proper IP detection
+// This is important for getting the correct client IP when behind a proxy or load balancer
+// In production, you might want to limit this to your proxy IPs only
+app.set('trust proxy', true);
+logger.info('Proxy trust enabled for IP detection');
+
 // Security middleware
 app.use(helmet());
+app.use(securityHeaders);
+
+// CORS middleware
 app.use(cors());
 
-// Rate limiting
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: 'Too many requests from this IP, please try again after 15 minutes',
-});
+// Log environment variables for debugging
+logger.info(`NODE_ENV: ${process.env.NODE_ENV}`);
+logger.info(`DISABLE_RATE_LIMIT: ${process.env.DISABLE_RATE_LIMIT}`);
 
-// Apply rate limiting to all API routes
-app.use('/api', apiLimiter);
+// // Rate limiting middleware - ONLY for production
+// if (process.env.NODE_ENV !== 'development') {
+//   const apiLimiter = rateLimit({
+//     windowMs: 15 * 60 * 1000, // 15 minutes
+//     max: 100,
+//     standardHeaders: true,
+//     legacyHeaders: false,
+//     message: 'Too many requests from this IP, please try again after a moment'
+//   });
+  
+//   // Apply rate limiting to all API routes in production only
+//   app.use('/api', apiLimiter);
+//   logger.info('Rate limiting enabled for production');
+// } else {
+//   logger.info('Rate limiting disabled for development');
+// }
 
 // Request logging
 app.use(morgan('combined', { stream: morganStream }));
 
 // Body parsing middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
+
+// SQL injection protection (after body parsing)
+app.use(sqlInjectionProtection);
 
 // API routes
-app.use('/api/users', userRoutes);
-app.use('/api/candidates', candidateRoutes);
+app.use('/api', routes);
+
+// Base route
+app.get('/', (req, res) => {
+  res.json({ message: 'Bicol Research Website API' });
+});
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
@@ -61,25 +89,9 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  logger.error(`Unhandled error: ${err.message}`, err);
-  
-  // Return a formatted error response
-  res.status(err.statusCode || 500).json({
-    success: false,
-    message: err.message || 'Internal Server Error',
-    stack: process.env.NODE_ENV === 'production' ? undefined : err.stack
-  });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found'
-  });
-});
+// Error handling
+app.use(notFound);
+app.use(errorHandler);
 
 // Start server
 const startServer = async () => {

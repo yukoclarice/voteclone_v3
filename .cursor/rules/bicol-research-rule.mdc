@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+we are using tailwind 4.1 and is drastically different compared to the version 3, ex. no tailwind.config.js, different installation etc. make sure to see the documentation at https://tailwindcss.com/docs/ if you are going to work with tailwind

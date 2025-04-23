@@ -1,14 +1,26 @@
-import { useEffect, useState } from 'react';
-import { doneProgress, startProgress } from '../utils/nprogress';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useProvince } from '../context/ProvinceContext';
-import { candidateService } from '../utils/api';
+import { useLoading } from '../context/LoadingContext';
+import { candidateService, statusService } from '../utils/api';
 import { useDispatch, useSelector } from 'react-redux';
 import { submitVote, resetVoteStatus } from '../userSlice';
+import logger from '../utils/logger';
+import { DISABLE_LOADING } from '../utils/config';
+import { useNavigate } from 'react-router-dom';
+import { APP_NAME } from '../utils/config';
+import SuccessModal from '../components/SuccessModal';
 
 function Vote() {
-  const { selectedVoteProvince } = useProvince();
+  const { selectedVoteProvince, setSelectedVoteProvince } = useProvince();
+  const { showProvinceChangeLoading, hideLoading } = useLoading();
   const dispatch = useDispatch();
   const { loading: submitting, error: submitError, voteStatus } = useSelector((state) => state.user);
+  
+  // Track if we're currently loading due to a province change
+  const loadingFromProvinceChange = useRef(false);
+  
+  // Add isFirstLoad state at component level
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
   
   // State to track selected candidates and loading states
   const [selectedSenators, setSelectedSenators] = useState([]);
@@ -25,8 +37,8 @@ function Vote() {
   const [governors, setGovernors] = useState([]);
   
   // Loading states
-  const [loadingSenators, setLoadingSenators] = useState(true);
-  const [loadingPartyLists, setLoadingPartyLists] = useState(true);
+  const [loadingSenators, setLoadingSenators] = useState(false);
+  const [loadingPartyLists, setLoadingPartyLists] = useState(false);
   const [loadingGovernors, setLoadingGovernors] = useState(false);
   
   // Error states
@@ -43,6 +55,137 @@ function Vote() {
     sex: 'M',
     email: ''
   });
+  
+  // Track previous province selection to detect changes
+  // Initialize with current value to prevent initial loading effect
+  const [previousProvince, setPreviousProvince] = useState(selectedVoteProvince);
+  
+  // Add new states for voting status
+  const navigate = useNavigate();
+  const [votingOpen, setVotingOpen] = useState(true); // Default to open until checked
+  const [checkingVotingStatus, setCheckingVotingStatus] = useState(true);
+  
+  // Add state to track modal closing animation
+  const [isClosing, setIsClosing] = useState(false);
+  
+  // Add state for success modal
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  
+  // Effect to update document title
+  useEffect(() => {
+    // Save the original title
+    const originalTitle = document.title;
+    
+    // Set page title to "Vote Now"
+    document.title = "Vote Now";
+    
+    // Restore original title when component unmounts
+    return () => {
+      document.title = originalTitle;
+    };
+  }, []);
+  
+  // Initialize component on first mount
+  useEffect(() => {
+    // This ensures we don't show loading the first time
+    setPreviousProvince(selectedVoteProvince);
+    logger.debug('Vote page: initial mount');
+    setIsFirstLoad(false);
+  }, []);
+  
+  // Effect to detect and handle province changes and fetch candidates data
+  useEffect(() => {
+    // Don't do anything on component mount/first load
+    if (isFirstLoad) {
+      return;
+    }
+    
+    // Function to fetch senators
+    const fetchSenators = async () => {
+      setLoadingSenators(true);
+      setSenatorsError(null);
+      logger.debug('Fetching senators data');
+      
+      try {
+        const response = await candidateService.getSenators();
+        setSenators(response.data || []);
+      } catch (error) {
+        logger.error('Error fetching senators:', error);
+        setSenatorsError('Failed to load senators data. Please try again.');
+      } finally {
+        setLoadingSenators(false);
+      }
+    };
+    
+    // Function to fetch party lists
+    const fetchPartyLists = async () => {
+      setLoadingPartyLists(true);
+      setPartyListsError(null);
+      logger.debug('Fetching party lists data');
+      
+      try {
+        const response = await candidateService.getPartyLists();
+        setPartyLists(response.data || []);
+      } catch (error) {
+        logger.error('Error fetching party lists:', error);
+        setPartyListsError('Failed to load party lists data. Please try again.');
+      } finally {
+        setLoadingPartyLists(false);
+      }
+    };
+    
+    // Function to fetch governors for the selected province
+    const fetchGovernors = async (provinceCode) => {
+      setLoadingGovernors(true);
+      setGovernorsError(null);
+      
+      logger.debug(`Fetching governors data for province: ${provinceCode}`);
+      
+      try {
+        const response = await candidateService.getGovernors(provinceCode);
+        setGovernors(response.data || []);
+      } catch (error) {
+        logger.error('Error fetching governors:', error);
+        setGovernorsError('Failed to load governors data. Please try again.');
+      } finally {
+        setLoadingGovernors(false);
+      }
+    };
+    
+    // Only show loading when user selects a different province with a valid value
+    if (selectedVoteProvince && selectedVoteProvince !== previousProvince) {
+      logger.info(`Province changed from ${previousProvince || 'none'} to ${selectedVoteProvince}`);
+      
+      // Remember new province before showing loading
+      setPreviousProvince(selectedVoteProvince);
+      
+      // Only show loading if debugging is not disabled
+      if (!DISABLE_LOADING) {
+        // Mark that we're loading from a province change
+        loadingFromProvinceChange.current = true;
+        
+        // Start the loading screen
+        showProvinceChangeLoading(5000); // Use a longer timeout as safety
+      }
+      
+      // Fetch all candidate data
+      Promise.all([fetchSenators(), fetchPartyLists(), fetchGovernors(selectedVoteProvince)])
+        .finally(() => {
+          // Make sure any lingering loading is cleared
+          if (loadingFromProvinceChange.current) {
+            hideLoading();
+            loadingFromProvinceChange.current = false;
+          }
+        });
+      
+    } else if (selectedVoteProvince !== previousProvince) {
+      // If province was cleared or changed to empty, just update tracking without loading
+      setPreviousProvince(selectedVoteProvince);
+      
+      // Clear governors when province is deselected
+      setGovernors([]);
+    }
+  }, [selectedVoteProvince, previousProvince, isFirstLoad, showProvinceChangeLoading, hideLoading, DISABLE_LOADING]);
   
   // Function to handle user info changes
   const handleUserInfoChange = (e) => {
@@ -81,48 +224,72 @@ function Vote() {
   
   // Function to open modal
   const openModal = () => {
+    setIsClosing(false);
     setShowModal(true);
   };
   
-  // Function to close modal
+  // Function to close modal with animation
   const closeModal = () => {
-    setShowModal(false);
-    // Clear submission message when closing the modal
-    if (voteStatus) {
-      dispatch(resetVoteStatus());
-      setSubmissionMessage(null);
-    }
+    setIsClosing(true);
+    
+    // Wait for animation to complete before hiding modal
+    setTimeout(() => {
+      setShowModal(false);
+      setIsClosing(false);
+      
+      // Clear submission message when closing the modal
+      if (voteStatus) {
+        dispatch(resetVoteStatus());
+        setSubmissionMessage(null);
+      }
+    }, 300); // Match the animation duration (0.3s)
   };
   
   // Function to find senator by ID
   const findSenatorById = (id) => {
-    return senators.find(senator => senator.id === id);
+    // First find the senator from the sorted array
+    return sortedSenators.find(senator => senator.id === id);
   };
   
   // Function to find party list by ID
   const findPartyListById = (id) => {
-    return partyLists.find(partyList => partyList.id === id);
+    // First find the party list from the sorted array
+    return sortedPartyLists.find(partyList => partyList.id === id);
   };
   
   // Function to find governor by ID
   const findGovernorById = (id) => {
-    return governors.find(governor => governor.id === id);
+    // First find the governor from the sorted array
+    return sortedGovernors.find(governor => governor.id === id);
   };
   
   // Function to validate form
   const validateForm = () => {
-    // Validate user information
-    const { firstName, lastName, age, email } = userInfo;
+    // Validate user info fields
+    if (!userInfo.firstName.trim()) return 'First name is required';
+    if (!userInfo.lastName.trim()) return 'Last name is required';
+    if (!userInfo.mobile.trim()) return 'Mobile number is required';
+    if (!/^0[0-9]{10}$/.test(userInfo.mobile.trim())) return 'Mobile number must be 11 digits starting with 0';
+    if (!userInfo.age.trim() || isNaN(userInfo.age)) return 'Age must be a valid number';
+    if (parseInt(userInfo.age) < 18) return 'must be 18+ to vote';
+    if (!userInfo.email.trim()) return 'Email is required';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userInfo.email.trim())) return 'Please enter a valid email address';
     
-    if (!firstName.trim()) return "First name is required";
-    if (!lastName.trim()) return "Last name is required";
-    if (!age || age < 18) return "You must be at least 18 years old to vote";
-    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) return "A valid email is required";
+    // Validate that at least one candidate is selected
+    const hasSelectedSenator = selectedSenators.length > 0;
+    const hasSelectedPartyList = !!selectedPartyList;
+    const hasSelectedGovernor = !!selectedGovernor;
     
-    // Validate vote selections
-    if (selectedSenators.length === 0) return "Please select at least one senator";
+    if (!hasSelectedSenator && !hasSelectedPartyList && !hasSelectedGovernor) {
+      return 'Please select at least one candidate (senator, party list, or governor)';
+    }
     
-    return null; // No errors
+    // Validate specific selections
+    if (hasSelectedSenator && selectedSenators.length > 12) {
+      return 'You can only select up to 12 senators';
+    }
+    
+    return null;
   };
   
   // Function to handle final vote submission
@@ -137,23 +304,34 @@ function Vote() {
       return;
     }
     
+    logger.info('Submitting vote data');
+    
     // Prepare vote data
     const voteData = {
       userInfo: {
-        firstName: userInfo.firstName,
-        lastName: userInfo.lastName,
-        mobileNumber: userInfo.mobile,
+        firstName: userInfo.firstName.trim(),
+        lastName: userInfo.lastName.trim(),
+        mobileNumber: userInfo.mobile.trim(),
         age: parseInt(userInfo.age),
         sex: userInfo.sex,
-        email: userInfo.email,
+        email: userInfo.email.trim(),
         provinceCode: selectedVoteProvince
       },
-      votes: {
-        senators: selectedSenators,
-        partyList: selectedPartyList,
-        governor: selectedGovernor
-      }
+      votes: {}
     };
+    
+    // Only include selected votes to prevent null values
+    if (selectedSenators.length > 0) {
+      voteData.votes.senators = selectedSenators;
+    }
+    
+    if (selectedPartyList) {
+      voteData.votes.partyList = selectedPartyList;
+    }
+    
+    if (selectedGovernor) {
+      voteData.votes.governor = selectedGovernor;
+    }
     
     // Dispatch vote submission action
     dispatch(submitVote(voteData));
@@ -169,118 +347,144 @@ function Vote() {
   // Handle vote status changes
   useEffect(() => {
     if (voteStatus) {
-      setSubmissionMessage({
-        type: 'success',
-        text: 'Your vote has been successfully submitted!'
-      });
-      
       // Reset selections after successful submission
       setSelectedSenators([]);
       setSelectedPartyList(null);
       setSelectedGovernor(null);
       
-      // Close modal after a delay
+      // Close form modal
+      closeModal();
+      
+      // Show success modal
+      setShowSuccessModal(true);
+      
+      // Reset vote status after showing success
       setTimeout(() => {
-        closeModal();
-      }, 3000);
+        dispatch(resetVoteStatus());
+      }, 500);
     }
-  }, [voteStatus]);
+  }, [voteStatus, dispatch]);
 
   // Handle submission error
   useEffect(() => {
     if (submitError) {
-      setSubmissionMessage({
-        type: 'error',
-        text: typeof submitError === 'string' ? submitError : 'Failed to submit your vote. Please try again.'
-      });
+      // Check for specific "you already voted" error message
+      if (typeof submitError === 'string' && submitError.toLowerCase().includes('already voted')) {
+        setSubmissionMessage({
+          type: 'error',
+          text: 'You already voted'
+        });
+      } else {
+        setSubmissionMessage({
+          type: 'error',
+          text: typeof submitError === 'string' ? submitError : 'Failed to submit your vote. Please try again.'
+        });
+      }
     }
   }, [submitError]);
   
-  // Load senators and party lists on component mount
-  useEffect(() => {
-    // Save the original document title
-    const originalTitle = document.title;
-    
-    // Change the document title when component mounts
-    document.title = "Vote Now";
-    
-    // Fetch senators
-    const fetchSenators = async () => {
-      setLoadingSenators(true);
-      try {
-        const response = await candidateService.getSenators();
-        // Sort by ballot_no before setting state
-        const sortedSenators = [...(response.data || [])].sort((a, b) => a.ballot_no - b.ballot_no);
-        setSenators(sortedSenators);
-        setSenatorsError(null);
-      } catch (error) {
-        console.error('Error fetching senators:', error);
-        setSenatorsError('Failed to load senators');
-      } finally {
-        setLoadingSenators(false);
-      }
-    };
-    
-    // Fetch party lists
-    const fetchPartyLists = async () => {
-      setLoadingPartyLists(true);
-      try {
-        const response = await candidateService.getPartyLists();
-        // Sort by ballot_no before setting state
-        const sortedPartyLists = [...(response.data || [])].sort((a, b) => a.ballot_no - b.ballot_no);
-        setPartyLists(sortedPartyLists);
-        setPartyListsError(null);
-      } catch (error) {
-        console.error('Error fetching party lists:', error);
-        setPartyListsError('Failed to load party lists');
-      } finally {
-        setLoadingPartyLists(false);
-      }
-    };
-    
-    // Fetch data
-    startProgress();
-    Promise.all([fetchSenators(), fetchPartyLists()])
-      .finally(() => {
-        doneProgress();
-      });
-    
-    // Restore the original title when component unmounts
-    return () => {
-      document.title = originalTitle;
-    };
-  }, []);
+  // Sort candidates by ballot_no
+  const sortedSenators = useMemo(() => {
+    return [...senators].sort((a, b) => {
+      // Ensure ballot_no is treated as a number for comparison
+      const ballotA = parseInt(a.ballot_no, 10) || 0;
+      const ballotB = parseInt(b.ballot_no, 10) || 0;
+      return ballotA - ballotB;
+    });
+  }, [senators]);
   
-  // Load governors when province changes
+  const sortedPartyLists = useMemo(() => {
+    return [...partyLists].sort((a, b) => {
+      const ballotA = parseInt(a.ballot_no, 10) || 0;
+      const ballotB = parseInt(b.ballot_no, 10) || 0;
+      return ballotA - ballotB;
+    });
+  }, [partyLists]);
+  
+  const sortedGovernors = useMemo(() => {
+    return [...governors].sort((a, b) => {
+      const ballotA = parseInt(a.ballot_no, 10) || 0;
+      const ballotB = parseInt(b.ballot_no, 10) || 0;
+      return ballotA - ballotB;
+    });
+  }, [governors]);
+  
+  // Get sorted list of selected senators
+  const sortedSelectedSenators = useMemo(() => {
+    // Get the actual senator objects for selected IDs
+    const selectedSenatorObjects = selectedSenators
+      .map(id => sortedSenators.find(senator => senator.id === id))
+      .filter(Boolean); // Remove any undefined values
+    
+    // Sort them by ballot number
+    return selectedSenatorObjects.sort((a, b) => {
+      const ballotA = parseInt(a.ballot_no, 10) || 0;
+      const ballotB = parseInt(b.ballot_no, 10) || 0;
+      return ballotA - ballotB;
+    });
+  }, [selectedSenators, sortedSenators]);
+
+  // Add effect to check if voting is open
   useEffect(() => {
-    // Clear previously selected governor when province changes
-    setSelectedGovernor(null);
-    
-    if (!selectedVoteProvince) {
-      setGovernors([]);
-      return;
-    }
-    
-    const fetchGovernors = async () => {
-      setLoadingGovernors(true);
-      startProgress();
+    const checkVotingStatus = async () => {
       try {
-        const response = await candidateService.getGovernors(selectedVoteProvince);
-        // Sort by ballot_no before setting state
-        const sortedGovernors = [...(response.data || [])].sort((a, b) => a.ballot_no - b.ballot_no);
-        setGovernors(sortedGovernors);
-        setGovernorsError(null);
+        setCheckingVotingStatus(true);
+        const response = await statusService.getVotingStatus();
+        
+        if (!response.data.isVotingOpen) {
+          logger.info('Voting is closed, redirecting to home');
+          setVotingOpen(false);
+          
+          // Redirect after a short delay to show message
+          setTimeout(() => {
+            navigate('/', { replace: true });
+          }, 3000);
+        } else {
+          setVotingOpen(true);
+        }
       } catch (error) {
-        console.error('Error fetching governors:', error);
-        setGovernorsError('Failed to load governors for this province');
+        logger.error('Error checking voting status:', error);
+        // Default to closed if there's an error
+        setVotingOpen(false);
       } finally {
-        setLoadingGovernors(false);
-        doneProgress();
+        setCheckingVotingStatus(false);
       }
     };
     
-    fetchGovernors();
-  }, [selectedVoteProvince]);
+    checkVotingStatus();
+  }, [navigate]);
+  
+  // Show loading or closed message
+  if (checkingVotingStatus) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-custom-gray">
+        <div className="bg-white p-8 rounded-md shadow-md text-center">
+          <h2 className="text-xl font-bold mb-4">Checking voting status...</h2>
+          <p className="text-gray-600">Please wait while we verify if voting is currently open.</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!votingOpen) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-custom-gray">
+        <div className="bg-white p-8 rounded-md shadow-md text-center">
+          <h2 className="text-xl font-bold mb-4 text-red-600">Voting is Closed</h2>
+          <p className="text-gray-600 mb-4">Thank you for your interest, but voting has been closed.</p>
+          <p className="text-gray-600">You will be redirected to the home page shortly...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Define a loading spinner component
+  const LoadingSpinner = () => (
+    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+  );
 
   return (
     <>
@@ -318,9 +522,13 @@ function Vote() {
                     <div className="bg-white p-6 rounded-md text-center text-red-600">
                       <p>{senatorsError}</p>
                     </div>
+                  ) : senators.length === 0 ? (
+                    <div className="bg-white p-6 rounded-md text-center">
+                      <p>No senators available</p>
+                    </div>
                   ) : (
                     <div className="grid sm:grid-cols-2 gap-1">
-                      {senators.map((senator) => (
+                      {sortedSenators.map((senator) => (
                         <button 
                           key={senator.id} 
                           className={`bg-white flex items-center gap-4 px-4 min-h-14 text-sm rounded-md cursor-pointer hover:scale-105 transition-all duration-200 ease-in-out ${selectedSenators.includes(senator.id) ? 'border border-custom-green/50' : 'border-custom-green/50'}`}
@@ -361,9 +569,13 @@ function Vote() {
                     <div className="bg-white p-6 rounded-md text-center text-red-600">
                       <p>{partyListsError}</p>
                     </div>
+                  ) : partyLists.length === 0 ? (
+                    <div className="bg-white p-6 rounded-md text-center">
+                      <p>No party lists available</p>
+                    </div>
                   ) : (
                     <div className="grid sm:grid-cols-2 gap-1">
-                      {partyLists.map((partyList) => (
+                      {sortedPartyLists.map((partyList) => (
                         <button 
                           key={partyList.id} 
                           className={`bg-white flex items-center gap-4 px-4 min-h-14 text-sm rounded-md cursor-pointer hover:scale-105 transition-all duration-200 ease-in-out ${selectedPartyList === partyList.id ? 'border border-custom-green' : 'border-custom-green/50'}`}
@@ -408,7 +620,7 @@ function Vote() {
                       </div>
                     ) : (
                       <div className="grid sm:grid-cols-1 gap-1">
-                        {governors.map((governor) => (
+                        {sortedGovernors.map((governor) => (
                           <button 
                             key={governor.id} 
                             className={`bg-white flex items-center gap-4 px-4 min-h-14 text-sm rounded-md cursor-pointer hover:scale-105 transition-all duration-200 ease-in-out ${selectedGovernor === governor.id ? 'border border-custom-green' : 'border-custom-green/50'}`}
@@ -436,7 +648,12 @@ function Vote() {
                 
                 <button 
                   onClick={openModal}
-                  className="bg-custom-green text-white px-16 h-10 rounded-md text-sm self-center mt-8 cursor-pointer"
+                  disabled={!selectedVoteProvince || (selectedSenators.length === 0 && !selectedPartyList && !selectedGovernor)}
+                  className={`${
+                    !selectedVoteProvince || (selectedSenators.length === 0 && !selectedPartyList && !selectedGovernor)
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-custom-green cursor-pointer hover:bg-custom-green/90 transition-colors'
+                  } text-white px-16 h-10 rounded-md text-sm self-center mt-8`}
                 >
                   Submit
                 </button>
@@ -454,8 +671,7 @@ function Vote() {
           >
             <div className="flex justify-center items-center h-full w-screen px-8 py-8">
               <div 
-                className="bg-white rounded-lg px-8 py-6 max-w-xl flex flex-col max-h-full overflow-y-auto my-8" 
-                aria-hidden="true"
+                className={`bg-white rounded-lg px-8 py-6 max-w-xl flex flex-col max-h-full overflow-y-auto my-8 ${isClosing ? 'animate-modal-out' : 'animate-modal-in'}`}
                 onClick={(e) => e.stopPropagation()}
               >
                 <h3 className="font-extrabold text-lg text-center md:text-xl text-custom-blue leading-5">SUBMIT YOUR VOTE</h3>
@@ -465,17 +681,15 @@ function Vote() {
                     <div className="flex flex-col">
                       <p className="text-sm text-gray-400">Senator</p>
                       <div className="grid">
-                        {selectedSenators.map(id => {
-                          const senator = findSenatorById(id);
-                          return senator ? (
-                            <p key={id} className="font-semibold">
-                              {senator.ballot_no}. {senator.name} 
-                              <span className="font-normal text-gray-400">
-                                {senator.party ? ` (${senator.party_code || senator.party})` : ''}
-                              </span>
-                            </p>
-                          ) : null;
-                        })}
+                        {/* Use sorted list of selected senators */}
+                        {sortedSelectedSenators.map(senator => (
+                          <p key={senator.id} className="font-semibold">
+                            {senator.ballot_no}. {senator.name} 
+                            <span className="font-normal text-gray-400">
+                              {senator.party ? ` (${senator.party_code || senator.party})` : ''}
+                            </span>
+                          </p>
+                        ))}
                       </div>
                     </div>
                     
@@ -593,9 +807,20 @@ function Vote() {
                   <button 
                     onClick={handleVoteSubmit}
                     disabled={submitting}
-                    className={`py-3 text-white/80 font-medium rounded-md text-sm cursor-pointer flex-1 ${submitting ? 'bg-gray-400' : 'bg-custom-green'}`}
+                    className={`py-3 text-white font-medium rounded-md text-sm flex-1 flex items-center justify-center ${
+                      submitting 
+                        ? 'bg-gray-400 cursor-not-allowed' 
+                        : 'bg-custom-green hover:bg-custom-green/90 transition-colors cursor-pointer'
+                    }`}
                   >
-                    {submitting ? 'Submitting...' : 'Vote Now'}
+                    {submitting ? (
+                      <>
+                        <LoadingSpinner />
+                        <span>Submitting...</span>
+                      </>
+                    ) : (
+                      'Vote Now'
+                    )}
                   </button>
                   <button 
                     onClick={closeModal}
@@ -608,6 +833,11 @@ function Vote() {
               </div>
             </div>
           </div>
+        )}
+        
+        {/* Success Modal */}
+        {showSuccessModal && (
+          <SuccessModal onClose={() => setShowSuccessModal(false)} />
         )}
     </>
   );

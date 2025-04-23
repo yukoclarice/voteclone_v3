@@ -1,5 +1,7 @@
 import NProgress from 'nprogress';
 import 'nprogress/nprogress.css';
+import logger from './logger';
+import { DEBUG_MODE } from './config';
 
 // Configure NProgress
 NProgress.configure({
@@ -12,12 +14,21 @@ NProgress.configure({
 });
 
 // Export functions to start and stop the progress bar
-export const startProgress = () => NProgress.start();
-export const doneProgress = () => NProgress.done();
+export const startProgress = () => {
+  logger.debug('NProgress: Started');
+  NProgress.start();
+};
+
+export const doneProgress = () => {
+  logger.debug('NProgress: Completed');
+  NProgress.done();
+};
 
 // Function to simulate loading for demo purposes
 export const simulateLoading = (delay = 800) => {
   startProgress();
+  logger.debug(`NProgress: Simulating loading (${delay}ms)`);
+  
   return new Promise(resolve => {
     setTimeout(() => {
       doneProgress();

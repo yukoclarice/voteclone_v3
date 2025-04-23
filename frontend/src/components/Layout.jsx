@@ -1,17 +1,20 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Header from './Header'
 import Footer from './Footer'
 import { PROVINCES } from './provinceData'
-import { startProgress } from '../utils/nprogress'
 import { useProvince } from '../context/ProvinceContext'
+import { useLoading } from '../context/LoadingContext'
+import logger from '../utils/logger'
 
 function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { selectedVoteProvince, setSelectedVoteProvince } = useProvince();
+  const { showLoading } = useLoading();
   const isHomePage = location.pathname === '/';
   const isVotePage = location.pathname === '/vote';
+  const provinceListRef = useRef(null);
   
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
@@ -27,6 +30,32 @@ function Layout() {
     setSelectedVoteProvince('');
   }, [location.pathname, setSelectedVoteProvince]);
   
+  // Handle outside clicks to close the dropdown
+  useEffect(() => {
+    function handleClickOutside(event) {
+      // Check if the click is outside the province list dropdown
+      if (
+        showProvinceList && 
+        provinceListRef.current && 
+        !provinceListRef.current.contains(event.target) &&
+        // Make sure the click isn't on the toggle button (which is handled separately)
+        !event.target.closest('button[data-dropdown-toggle="provinceList"]')
+      ) {
+        setShowProvinceList(false);
+      }
+    }
+    
+    // Add event listener when dropdown is shown
+    if (showProvinceList) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    // Clean up event listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showProvinceList]);
+  
   const toggleProvinceList = () => {
     setShowProvinceList(!showProvinceList);
   };
@@ -35,11 +64,9 @@ function Layout() {
   const handleProvinceSelect = (provinceCode) => {
     setSelectedProvince(provinceCode);
     setShowProvinceList(false);
+    logger.info(`Selected province: ${provinceCode} on ${location.pathname}`);
     
-    // Start the progress bar before navigation
-    startProgress();
-    
-    // Use React Router navigation
+    // Always navigate to home page with the province parameter
     navigate(`/?province=${provinceCode}`);
   };
   
@@ -78,9 +105,13 @@ function Layout() {
     <>
       <Header toggleProvinceList={toggleProvinceList} />
 
-      {/* ProvinceList dropdown - only shown on home page */}
-      {isHomePage && (
-        <div id="provinceList" className={`absolute top-18 left-0 right-0 bg-white z-50 ${showProvinceList ? 'block' : 'hidden'}`}>
+      {/* ProvinceList dropdown - show on both home and vote pages */}
+      {(isHomePage || isVotePage) && (
+        <div 
+          id="provinceList" 
+          className={`absolute top-18 left-0 right-0 bg-white z-50 ${showProvinceList ? 'block' : 'hidden'}`}
+          ref={provinceListRef}
+        >
           <div className="container mx-auto px-4 xl:px-0">
             {PROVINCES.map((province) => (
               <div key={province.code}>
@@ -153,7 +184,7 @@ function Layout() {
                   </option>
                 ))}
               </select>
-              <div className="absolute right-2 top-0 bottom-0 flex items-center"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="size-4"><path fill-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"></path></svg></div>
+              <div className="absolute right-2 top-0 bottom-0 flex items-center"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="size-4"><path fillRule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd"></path></svg></div>
             </div>
           ) : (
             <div className="flex-1">
