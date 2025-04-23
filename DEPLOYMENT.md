@@ -30,6 +30,7 @@ Configure the following environment variables in the Render dashboard:
 
 #### Application Configuration
 - `NODE_ENV`: production
+- `NPM_CONFIG_PRODUCTION`: false (important: ensures dev dependencies are installed during build)
 - `PORT`: 10000 (or your preferred port)
 - `LOG_LEVEL`: info
 - `JWT_SECRET`: A secure random string for JWT signing (if using authentication)
@@ -65,17 +66,22 @@ Ensure AWS RDS security group allows connections from Render's IP addresses. You
 
 ### Common Issues
 
-1. **Database Connection Errors**
+1. **Module Not Found Errors**
+   - Ensure `NPM_CONFIG_PRODUCTION` is set to `false` to install dev dependencies
+   - Check if all required packages are listed in the correct package.json
+   - If you still face issues, try adding the problematic package to regular dependencies instead of devDependencies
+
+2. **Database Connection Errors**
    - Verify that your AWS RDS instance is publicly accessible
    - Check that security groups allow connections from Render's IP addresses
    - Confirm database credentials are correct in environment variables
 
-2. **Application Crashes**
+3. **Application Crashes**
    - Check Render logs for error messages
    - Verify that all required environment variables are set
    - Ensure the build and start commands are correct
 
-3. **Frontend Not Loading**
+4. **Frontend Not Loading**
    - Check if the build process completed successfully
    - Verify that the static files are being served correctly from the backend
 

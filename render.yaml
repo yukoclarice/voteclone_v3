@@ -2,12 +2,13 @@ services:
   - type: web
     name: bicol-research-website
     env: node
-    nodeVersion: 20
-    buildCommand: bash ./build.sh
+    buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NPM_CONFIG_PRODUCTION
+        value: false
       - key: PORT
         value: 10000
       # Database configuration
