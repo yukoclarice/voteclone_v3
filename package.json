@@ -7,7 +7,8 @@
     "install:frontend": "cd frontend && npm install --include=dev",
     "install:backend": "cd backend && npm install",
     "postinstall": "npm run install:frontend && npm run install:backend",
-    "build:frontend": "cd frontend && npm run build",
+    "ensure:terser": "cd frontend && npm install terser --no-save",
+    "build:frontend": "npm run ensure:terser && cd frontend && npm run build",
     "start:backend": "cd backend && npm start",
     "build": "npm run build:frontend",
     "start": "npm run start:backend"

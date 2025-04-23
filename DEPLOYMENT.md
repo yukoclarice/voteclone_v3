@@ -71,19 +71,25 @@ Ensure AWS RDS security group allows connections from Render's IP addresses. You
    - Check if all required packages are listed in the correct package.json
    - If you still face issues, try adding the problematic package to regular dependencies instead of devDependencies
 
-2. **Database Connection Errors**
+2. **Terser Not Found Error**
+   - This is a common issue with Vite builds on Render. We've added a script (`ensure:terser`) that installs Terser before running the build.
+   - We've also moved Terser from devDependencies to regular dependencies in the frontend package.json
+   - If you still encounter this issue, you can try running a manual deployment after modifying the build command to: `npm install && cd frontend && npm install terser && cd .. && npm run build`
+
+3. **Database Connection Errors**
    - Verify that your AWS RDS instance is publicly accessible
    - Check that security groups allow connections from Render's IP addresses
    - Confirm database credentials are correct in environment variables
 
-3. **Application Crashes**
+4. **Application Crashes**
    - Check Render logs for error messages
    - Verify that all required environment variables are set
    - Ensure the build and start commands are correct
 
-4. **Frontend Not Loading**
+5. **Frontend Not Loading**
    - Check if the build process completed successfully
    - Verify that the static files are being served correctly from the backend
+   - Check the network tab in your browser to see if there are any 404 errors for static assets
 
 ## Maintenance
 
