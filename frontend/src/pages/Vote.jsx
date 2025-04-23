@@ -52,7 +52,7 @@ function Vote() {
     lastName: '',
     mobile: '',
     age: '',
-    sex: 'M',
+    sex: 'male',
     email: ''
   });
   
@@ -778,8 +778,8 @@ function Vote() {
                         onChange={handleUserInfoChange}
                         className="h-12 border rounded-md border-gray-200 mt-2 px-4 text-sm min-w-0"
                       >
-                        <option value="M">Male</option>
-                        <option value="F">Female</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
                       </select>
                     </div>
                   </div>
