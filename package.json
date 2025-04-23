@@ -4,11 +4,10 @@
   "description": "Bicol Research Survey Website",
   "main": "index.js",
   "scripts": {
-    "install:frontend": "cd frontend && npm install --include=dev",
+    "install:frontend": "cd frontend && npm install",
     "install:backend": "cd backend && npm install",
     "postinstall": "npm run install:frontend && npm run install:backend",
-    "ensure:terser": "cd frontend && npm install terser --no-save",
-    "build:frontend": "npm run ensure:terser && cd frontend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
     "start:backend": "cd backend && npm start",
     "build": "npm run build:frontend",
     "start": "npm run start:backend"
