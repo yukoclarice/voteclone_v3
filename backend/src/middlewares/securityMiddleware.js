@@ -59,7 +59,11 @@ export const securityHeaders = (req, res, next) => {
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
-  res.setHeader('Content-Security-Policy', "default-src 'self'");
+  // Updated CSP to allow inline styles and scripts needed for React
+  res.setHeader(
+    'Content-Security-Policy', 
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:;"
+  );
   res.setHeader('Referrer-Policy', 'no-referrer-when-downgrade');
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
   
