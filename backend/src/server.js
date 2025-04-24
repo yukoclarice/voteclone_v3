@@ -63,20 +63,20 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-  // Frontend build path - relative to the backend directory
-  const frontendBuildPath = path.join(__dirname, '../../frontend/dist');
+// if (process.env.NODE_ENV === 'production') {
+//   // Frontend build path - relative to the backend directory
+//   const frontendBuildPath = path.join(__dirname, '../../frontend/dist');
   
-  logger.info(`Serving static files from: ${frontendBuildPath}`);
+//   logger.info(`Serving static files from: ${frontendBuildPath}`);
   
-  // Serve static files from the frontend build directory
-  app.use(express.static(frontendBuildPath));
+//   // Serve static files from the frontend build directory
+//   app.use(express.static(frontendBuildPath));
   
-  // Handle any requests that don't match the API routes
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(frontendBuildPath, 'index.html'));
-  });
-}
+//   // Handle any requests that don't match the API routes
+//   app.get('*', (req, res) => {
+//     res.sendFile(path.join(frontendBuildPath, 'index.html'));
+//   });
+// }
 
 // Error handling
 app.use(notFound);
