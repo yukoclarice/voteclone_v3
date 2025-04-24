@@ -11,6 +11,7 @@ import './models/index.js';
 import { logger, morganStream } from './utils/logger.js';
 import { notFound, errorHandler } from './middlewares/errorMiddleware.js';
 import { sqlInjectionProtection, securityHeaders } from './middlewares/securityMiddleware.js';
+import fs from 'fs';
 
 // Import routes
 import routes from './routes/index.js';
@@ -33,7 +34,9 @@ app.use(securityHeaders);
 
 // CORS middleware
 app.use(cors({
-  origin: ['https://voteclone-v3.vercel.app/'],
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://voteclone-v3.vercel.app'] 
+    : 'http://localhost:5173',
   credentials: true
 }));
 
@@ -59,24 +62,42 @@ app.get('/api/health', (req, res) => {
 });
 
 // Get the directory name using ES module approach
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Serve static files in production
-// if (process.env.NODE_ENV === 'production') {
-//   // Frontend build path - relative to the backend directory
-//   const frontendBuildPath = path.join(__dirname, '../../frontend/dist');
-  
-//   logger.info(`Serving static files from: ${frontendBuildPath}`);
-  
-//   // Serve static files from the frontend build directory
-//   app.use(express.static(frontendBuildPath));
-  
-//   // Handle any requests that don't match the API routes
-//   app.get('*', (req, res) => {
-//     res.sendFile(path.join(frontendBuildPath, 'index.html'));
-//   });
-// }
+if (process.env.NODE_ENV === 'production') {
+  try {
+    // Frontend build path - relative to the backend directory
+    const frontendBuildPath = path.join(__dirname, '../../frontend/dist');
+    
+    // Check if the directory exists before configuring static serving
+    if (fs.existsSync(frontendBuildPath)) {
+      logger.info(`Serving static files from: ${frontendBuildPath}`);
+      
+      // Serve static files from the frontend build directory
+      app.use(express.static(frontendBuildPath));
+      
+      // Handle any requests that don't match the API routes
+      app.get('*', (req, res) => {
+        // Check if index.html exists before sending it
+        const indexPath = path.join(frontendBuildPath, 'index.html');
+        if (fs.existsSync(indexPath)) {
+          res.sendFile(indexPath);
+        } else {
+          logger.error(`index.html not found at ${indexPath}`);
+          res.status(404).json({ error: 'Frontend assets not found' });
+        }
+      });
+    } else {
+      logger.warn(`Frontend build directory not found at: ${frontendBuildPath}`);
+      logger.warn('Static file serving disabled. API-only mode activated.');
+    }
+  } catch (error) {
+    logger.error(`Error setting up static file serving: ${error.message}`);
+    // Continue running the API even if static serving fails
+  }
+}
 
 // Error handling
 app.use(notFound);
