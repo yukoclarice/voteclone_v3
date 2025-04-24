@@ -1,7 +1,10 @@
+// Load environment variables first before anything else
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
 import helmet from 'helmet';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -15,9 +18,6 @@ import fs from 'fs';
 
 // Import routes
 import routes from './routes/index.js';
-
-// Load environment variables
-dotenv.config();
 
 // Create Express app
 const app = express();
@@ -35,10 +35,16 @@ app.use(securityHeaders);
 // CORS middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://voteclone-v3.vercel.app'] 
-    : 'http://localhost:5173',
+    ? [
+        'https://voteclone-v3.vercel.app',
+        'https://bicolresearchwebsite.vercel.app',
+        process.env.ALLOWED_ORIGIN || '*'
+      ] 
+    : '*',
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
+  exposedHeaders: ['X-API-Key'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
 
 // Log environment variables for debugging

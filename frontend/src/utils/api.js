@@ -1,6 +1,6 @@
 import axios from 'axios';
 import NProgress from 'nprogress';
-import { API_URL, API_TIMEOUT, API_KEY, DEBUG_API } from './config';
+import { API_URL, API_TIMEOUT, API_KEY, DEBUG_API, IS_DEVELOPMENT } from './config';
 import logger from './logger';
 
 // Create axios instance with default config
@@ -67,6 +67,16 @@ api.interceptors.response.use(
                       error.response.data);
       }
       logger.error('API Error:', error.response.status, error.response.data);
+      
+      // Handle API key errors specifically
+      if (error.response.status === 401 && error.response.data?.message?.includes('API key')) {
+        logger.error('API Key authentication failed. Please check your environment configuration.');
+        
+        // If we're in development, we could try to use a fallback key
+        if (IS_DEVELOPMENT) {
+          console.warn('Development mode: Attempting to use fallback API key. This would not work in production.');
+        }
+      }
       
       // Handle authentication errors (if adding auth later)
       if (error.response.status === 401) {
