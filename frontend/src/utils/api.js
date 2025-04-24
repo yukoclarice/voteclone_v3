@@ -1,6 +1,6 @@
 import axios from 'axios';
 import NProgress from 'nprogress';
-import { API_URL, API_TIMEOUT, DEBUG_API } from './config';
+import { API_URL, API_TIMEOUT, API_KEY, DEBUG_API } from './config';
 import logger from './logger';
 
 // Create axios instance with default config
@@ -8,6 +8,7 @@ const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
+    'X-API-Key': API_KEY
   },
   timeout: API_TIMEOUT,
 });
@@ -23,6 +24,9 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Ensure API key is always included
+    config.headers['X-API-Key'] = API_KEY;
     
     if (DEBUG_API) {
       console.log(`🚀 API Request: ${config.method.toUpperCase()} ${config.url}`, 

@@ -5,6 +5,7 @@
 // API Configuration
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 export const API_TIMEOUT = Number(import.meta.env.VITE_API_TIMEOUT) || 10000;
+export const API_KEY = import.meta.env.VITE_API_KEY || 'bicol_research_api_key_5d7e9f8c3b2a1';
 
 // Application Information
 export const APP_NAME = import.meta.env.VITE_APP_NAME || 'Bicol Research Survey';
@@ -30,6 +31,7 @@ export const debug = (...args) => {
 export default {
   API_URL,
   API_TIMEOUT,
+  API_KEY,
   APP_NAME,
   APP_VERSION,
   ENABLE_ANALYTICS,

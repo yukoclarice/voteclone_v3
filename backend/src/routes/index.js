@@ -4,13 +4,22 @@ import statusRoutes from './statusRoutes.js';
 import userRoutes from './userRoutes.js';
 import { sequelize } from '../config/db.js';
 import { Province } from '../models/index.js';
+import { apiKeyAuth } from '../middlewares/apiKeyMiddleware.js';
 
 const router = express.Router();
 
-// Test route
+// Test route - publicly accessible for health checks
 router.get('/hello', (req, res) => {
   res.json({ message: 'Hello from the API!' });
 });
+
+// Health check route - publicly accessible
+router.get('/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Bicol Research Website API is running' });
+});
+
+// All other routes require API key authentication
+router.use(apiKeyAuth);
 
 // Test database connection
 router.get('/test-db', async (req, res) => {

@@ -37,7 +37,8 @@ app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? ['https://voteclone-v3.vercel.app'] 
     : 'http://localhost:5173',
-  credentials: true
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key']
 }));
 
 // Log environment variables for debugging
@@ -55,11 +56,6 @@ app.use(sqlInjectionProtection);
 
 // API routes
 app.use('/api', routes);
-
-// Base route
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Bicol Research Website API is running' });
-});
 
 // Get the directory name using ES module approach
 const __filename = fileURLToPath(import.meta.url);
@@ -136,4 +132,4 @@ process.on('unhandledRejection', (err) => {
 // Start the server
 startServer();
 
-export default app; 
+export default app;
