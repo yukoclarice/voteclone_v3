@@ -132,6 +132,17 @@ export const submitVote = async (userInfo, votes, ipAddress) => {
     // Ensure votes object exists
     votes = votes || {};
     
+    // Convert sex values from 'M'/'F' to 'male'/'female'
+    if (userInfo.sex) {
+      if (userInfo.sex === 'M') {
+        userInfo.sex = 'male';
+      } else if (userInfo.sex === 'F') {
+        userInfo.sex = 'female';
+      }
+      // If it's already 'male' or 'female', keep it as is
+      logger.info(`Sex value normalized to: ${userInfo.sex}`);
+    }
+    
     // Create or update user
     let user = await User.findOne({ 
       where: { email: userInfo.email }, 
