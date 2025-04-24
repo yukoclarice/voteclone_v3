@@ -33,7 +33,7 @@ app.use(securityHeaders);
 
 // CORS middleware
 app.use(cors({
-  origin: ['https://voteclone-v3.onrender.com'],
+  origin: ['https://voteclone-v3.vercel.app/'],
   credentials: true
 }));
 
@@ -59,8 +59,8 @@ app.get('/api/health', (req, res) => {
 });
 
 // Get the directory name using ES module approach
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 
 // Serve static files in production
 // if (process.env.NODE_ENV === 'production') {
